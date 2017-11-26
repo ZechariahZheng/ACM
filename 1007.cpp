@@ -1,161 +1,76 @@
-#include <iostream>
-#include <algorithm>
-#include <cmath>
+/*求平面 最近点对的方法，就是分治法。
+先将点分成两个区间，假设S1，S2，然后分别求S1内最近点对的点d1，S2内最近点对的点d2
+再求S1与S2内最近点对 d=min（d1,d2）
+但是，不能忘记，最近点对可能是 一个点在S1一个点在S2。
+接下来就是比较精华的部分：
+所求的点的位置，一定在于  mid-d,mid+d 之间。
+然后，就在这个区间开始找点，并不断更新d值，最后就可以得到d了。*/
 
-using namespace std;
-
-/*采用分治思想*/
-const int SIZE = 100005;
-const int LEFT = 0;
-const int RIGHT = 1;
-
-typedef struct {
-	int flag;		//标志位（left or right）
-	double x;
-	double y;
-}point;
-
-point num[SIZE];
-point c[SIZE];
-
-/*按x坐标大小排序*/
-bool cmpx(point &p1, point &p2)
-{
-	if (p1.x == p2.x)
-		return p1.y < p2.y;
-	return p1.x < p2.x;
-}
-
-/*按y坐标排序*/
-bool cmpy(point &p1, point &p2)
-{
-	if (p1.y == p2.y)
-		return p1.x < p2.x;
-	return p1.y < p2.y;
-}
-
-/*计算两个点的距离*/
-double GetDist(point &p1, point &p2)
-{
-	return sqrt(pow(p1.x - p2.x, 2.0) + pow(p1.y - p2.y, 2.0));
-}
-
-/*计算三个坐标点的最小值*/
-double Min(double &a, double &b, double &c)
-{
-	double min;
-
-	min = a > b ? b : a;
-	min = c > min ? min : c;
-
-	return min;
-}
-
-/*比较两个距离*/
-double MinDist(double &a, double &b)
-{
-	return a < b ? a : b;
-}
-
-double MinRadius(int start, int end)
-{
-	int cnt;
-	double dist;
-
-	cnt = end - start;
-	if (cnt == 0)
-		return 0;
-	else if (cnt == 1)			//两个点
-	{
-		return GetDist(num[start], num[end]);
-	}
-	else if (cnt == 2)			//三个点
-	{
-		double tmp1, tmp2, tmp3;
-
-		tmp1 = GetDist(num[start], num[start+1]);
-		tmp2 = GetDist(num[start], num[end]);
-		tmp3 = GetDist(num[start+1], num[end]);
-
-		return Min(tmp1, tmp2, tmp3);
-	}
-	else					//多个点
-	{
-		/*1.计算出中心点，使两侧坐标点尽量同样多*/
-		double leftmin, rightmin, min;
-		int mid = (start+end) / 2;
-
-		/*递归地调用*/
-		leftmin = MinRadius(start, mid);		//求得左边的最小距离
-		rightmin = MinRadius(mid, end);			//求得右边的最小距离
-		dist = MinDist(leftmin, rightmin);
-		int p = 0;
-
-		/*找出两侧距离中心距离小于dist的点*/
-		int i;
-		for (i = 0; i <= mid; i++)
-		{
-			double leftline = num[mid].x - dist;		//左侧线，左侧线右边的点记录下来
-
-			if (num[i].x >= leftline)
-			{
-				c[p].flag = LEFT;		
-				c[p].x = num[i].x;
-				c[p].y = num[i].y;
-				p++;
-			}
-		}
-		for (; i <= end; i++)
-		{
-			double rightline = num[mid].x + dist;		//右侧线，右侧线左边的点记录下来
-			
-			if (num[i].x <= rightline)
-			{
-				c[p].flag = RIGHT;
-				c[p].x = num[i].x;
-				c[p].y = num[i].y;
-				p++;
-			}
-		}
-		sort(c, c+p, cmpy);			//将两侧找到的点按从小到大重新排序
-		for (i = 0; i < p; i++)
-		{
-			/*在左侧线和中心线，右侧线和中心线的两个区域内，只需要考察某个点与它
-			按Y坐标排序且紧接着的7个点之间的距离就可以了，计较所有的点*/
-			for (int j = 1; (j <= 7) && (i+j < p); j++)
-			{
-				if (c[i].flag != c[i+j].flag)
-				{
-					min = GetDist(c[i], c[i+j]);
-					if (min < dist)
-						dist = min;
-				}
-			}
-		}
-	}
-	return dist;
-}
-
-int main(void)
-{
-	int n;
-	
-	while (cin >> n && n != 0)
-	{
-		double result = 0;
-		
-		for (int i = 0; i < n; i++)
-		{
-			num[i].flag = 0;
-			cin >> num[i].x >> num[i].y;
-		}
-
-		sort(num, num+n, cmpx);
-
-		result = MinRadius(0, n-1);
-
-		printf("%.2lf\n", result/2);
-	}
-
-	return 0;
-}
+#include <stdio.h>  
+#include <math.h>  
+#include <algorithm>  
+using namespace std;  
+#define N 100001  
+struct Point  
+{  
+    double x,y;  
+}p[N];  
+int arr[N];  
+double Min(double a,double b)  
+{  
+    return a<b?a:b;  
+}  
+// 求两点之间的距离  
+double dis(Point a,Point b)  
+{  
+    return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));  
+}  
+// 根据点横坐标or纵坐标排序  
+bool cmp_y( int a,int b)  
+{  
+    return p[a].y<p[b].y;  
+}  
+bool cmp_x( Point a,Point b)  
+{  
+    return a.x<b.x;  
+}  
+// 求最近点对  
+double close_pair( int l,int r )  
+{  
+    // 判断两个点和三个点的情况  
+    if( r==l+1 )    return dis( p[l],p[r] );  
+    else if( r==l+2 )   return Min( dis(p[l],p[r]),Min( dis(p[l],p[l+1]),dis(p[l+1],p[r]) ) );  
+  
+    int mid=(l+r)>>1;  
+    double ans=Min(close_pair(l,mid),close_pair(mid+1,r));  
+  
+    int i,j,cnt=0;  
+    // 如果 当前p[i]点 横坐标位于 范围（中点横坐标-ans，中点横坐标+ans）位置内，则记录点的序号  
+    for(i=l; i<=r; ++i)  
+        if(  p[i].x>=p[mid].x-ans && p[i].x<=p[mid].x+ans  )  
+            arr[cnt++]=i;  
+    // 按照纵坐标由小到大 对于arr数组内点进行排序  
+    sort(arr,arr+cnt,cmp_y);  
+    for(i=0; i<cnt; i++)  
+        for(j=i+1; j<cnt; j++)  
+        {  
+            if(p[arr[j]].y-p[arr[i]].y>=ans) break;  
+            ans=Min(ans,dis(p[arr[i]],p[arr[j]]));  
+        }  
+  
+    return ans;  
+}  
+  
+int main()  
+{  
+    int i,n;  
+    while( scanf("%d",&n)!=EOF && n)  
+    {  
+        for(i=0;i<n;++i)  
+            scanf("%lf%lf",&p[i].x,&p[i].y);  
+        // 先将所有点按照横坐标由小到大排序  
+        sort(p,p+n,cmp_x);  
+        printf("%.2lf\n",close_pair(0,n-1)/2.0);  
+    }  
+    return 0;  
+} 
