@@ -308,7 +308,7 @@ int main(void)
 	int t;
 	int i;
 	char tmp;
-	block *now;
+	block *now = NULL;
 	int res;
 
 	while (cin >> m && cin >>n && cin >> t && m != 0 && n != 0 && t != 0)
